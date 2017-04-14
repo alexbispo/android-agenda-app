@@ -27,7 +27,7 @@ public class FormularioActivity extends AppCompatActivity {
                 aluno.fillFormulario(this);
             }
         } else {
-            aluno = new Aluno(this);
+            aluno = new Aluno();
         }
     }
 
@@ -43,7 +43,7 @@ public class FormularioActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.menu_formulario_ok:
                 aluno.fromFormulario(this);
-                if (aluno.save()){
+                if (aluno.save(this)){
                     Toast.makeText(FormularioActivity.this, "Aluno " + aluno.getNome() + " salvo com sucesso!", Toast.LENGTH_SHORT).show();
                 }
                 finish();

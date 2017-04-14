@@ -62,7 +62,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
             public boolean onMenuItemClick(MenuItem menuItem) {
                 AdapterView.AdapterContextMenuInfo adapterContextMenuInfo = (AdapterView.AdapterContextMenuInfo) menuInfo;
                 Aluno aluno = (Aluno) listaAlunos.getItemAtPosition(adapterContextMenuInfo.position);
-                aluno.destroy();
+                aluno.destroy(ListaAlunosActivity.this);
                 loadListView();
                 return false;
             }
@@ -70,8 +70,8 @@ public class ListaAlunosActivity extends AppCompatActivity {
     }
 
     private void loadListView() {
-        Aluno aluno = new Aluno(this);
-        List<Aluno> alunos = aluno.all();
+        Aluno aluno = new Aluno();
+        List<Aluno> alunos = aluno.all(this);
         ArrayAdapter<Aluno> adapter = new ArrayAdapter<Aluno>(this, android.R.layout.simple_list_item_1, alunos);
         listaAlunos.setAdapter(adapter);
     }

@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.widget.EditText;
 import android.widget.RatingBar;
 
-import com.artes.alexbispo.agenda.FormularioActivity;
 import com.artes.alexbispo.agenda.R;
 
 import java.io.Serializable;
@@ -19,11 +18,11 @@ import java.util.List;
  * Created by alex on 31/12/16.
  */
 
-public class Aluno extends AbstractModel implements Serializable {
+public class Aluno implements SQLObject.Accessible, Serializable {
 
     private static final int DATA_BASE_VERSION = 1;
 
-    private Context context;
+//    private Context context;
 
     private Long id;
     private String nome;
@@ -31,11 +30,9 @@ public class Aluno extends AbstractModel implements Serializable {
     private String telefone;
     private String site;
     private Double nota;
+    private SQLObject mSqlObj;
 
-    public Aluno(Context context) {
-        super(context, DATA_BASE_VERSION);
-        this.context = context;
-    }
+    public Aluno() {}
 
     public void fromFormulario(Activity activity){
         EditText campoNome = (EditText) activity.findViewById(R.id.formulario_nome);
@@ -52,7 +49,7 @@ public class Aluno extends AbstractModel implements Serializable {
     }
 
     public void fillFormulario(Activity activity){
-        context = activity;
+//        context = activity;
         EditText campoNome = (EditText) activity.findViewById(R.id.formulario_nome);
         EditText campoEndereco = (EditText) activity.findViewById(R.id.formulario_endereco);
         EditText campoSite = (EditText) activity.findViewById(R.id.formulario_site);
@@ -66,8 +63,9 @@ public class Aluno extends AbstractModel implements Serializable {
         campoNota.setProgress(getNota().intValue());
     }
 
-    public boolean create(){
-        SQLiteDatabase db = getWritableDatabase();
+    public boolean create(Context context){
+        SQLObject sqlObj = getSqlObj(context);
+        SQLiteDatabase db = sqlObj.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
         contentValues.put("nome", getNome());
@@ -77,16 +75,19 @@ public class Aluno extends AbstractModel implements Serializable {
         contentValues.put("nota", getNota());
 
         db.insert(getTableName(), null, contentValues);
-        close();
+        sqlObj.close();
         return true;
     }
 
-    public boolean save(){
+    public boolean save(Context context){
         if(getId() == null){
-            return create();
+            return create(context);
         }
 
-        SQLiteDatabase db = getWritableDatabase();
+        SQLObject sqlObj = getSqlObj(context);
+
+
+        SQLiteDatabase db = sqlObj.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
         contentValues.put("nome", getNome());
@@ -97,13 +98,14 @@ public class Aluno extends AbstractModel implements Serializable {
 
         String[] params = {getId().toString()};
         db.update(getTableName(), contentValues, "id = ?", params);
-        close();
+        sqlObj.close();
         return true;
     }
 
     public static Aluno find(Context context, Long id_aluno) {
-        Aluno aluno = new Aluno(context);
-        SQLiteDatabase db = aluno.getReadableDatabase();
+        Aluno aluno = new Aluno();
+        SQLObject sqlObj =  aluno.getSqlObj(context);
+        SQLiteDatabase db = sqlObj.getReadableDatabase();
 
         String sql = "SELECT * FROM Alunos WHERE id = ?";
         String[] params = {id_aluno.toString()};
@@ -118,19 +120,20 @@ public class Aluno extends AbstractModel implements Serializable {
             aluno.setNota(cursor.getDouble(cursor.getColumnIndex("nota")));
         }
         cursor.close();
-        aluno.close();
+        sqlObj.close();
         return aluno.getId() != null ? aluno : null;
     }
 
-    public List<Aluno> all(){
+    public List<Aluno> all(Context context){
         String sql = "SELECT * FROM Alunos;";
-        SQLiteDatabase db = getReadableDatabase();
+        SQLObject sqlObj =  getSqlObj(context);
+        SQLiteDatabase db = sqlObj.getReadableDatabase();
         Cursor cursor = db.rawQuery(sql, null);
 
         ArrayList<Aluno> alunos = new ArrayList<>();
 
         while (cursor.moveToNext()){
-            Aluno aluno = new Aluno(this.context);
+            Aluno aluno = new Aluno();
             aluno.setId(cursor.getLong(cursor.getColumnIndex("id")));
             aluno.setNome(cursor.getString(cursor.getColumnIndex("nome")));
             aluno.setTelefone(cursor.getString(cursor.getColumnIndex("telefone")));
@@ -140,23 +143,38 @@ public class Aluno extends AbstractModel implements Serializable {
             alunos.add(aluno);
         }
         cursor.close();
-        close();
+        sqlObj.close();
         return alunos;
     }
 
-    public void destroy() {
-        SQLiteDatabase db = getWritableDatabase();
+    public void destroy(Context context) {
+        SQLObject sqlObj =  getSqlObj(context);
+        SQLiteDatabase db = sqlObj.getWritableDatabase();
         String[] params = {getId().toString()};
         db.delete("Alunos", "id = ?", params);
-        close();
+        sqlObj.close();
     }
 
+    @Override
+    public int getDataBaseVersion(){
+        return DATA_BASE_VERSION;
+    }
+
+    @Override
     public String toSql(){
         return getTableName() + " (id INTEGER PRIMARY KEY, nome TEXT NOT NULL, endereco TEXT, telefone TEXT, site TEXT, nota REAL)";
     }
 
+    @Override
     public String getTableName(){
         return "Alunos";
+    }
+
+    public SQLObject getSqlObj(Context context){
+        if(mSqlObj == null){
+            this.mSqlObj = new SQLObject(context, this);
+        }
+        return this.mSqlObj;
     }
 
     public Long getId() {
