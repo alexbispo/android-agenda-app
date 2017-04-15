@@ -3,6 +3,7 @@ package com.artes.alexbispo.agenda;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -57,7 +58,7 @@ public class ListaAlunosActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadListView();
+        new LoadAlunosTask().execute();
     }
 
     @Override
@@ -105,16 +106,25 @@ public class ListaAlunosActivity extends AppCompatActivity {
             public boolean onMenuItemClick(MenuItem menuItem) {
 
                 aluno.destroy(ListaAlunosActivity.this);
-                loadListView();
+                new LoadAlunosTask().execute();
                 return false;
             }
         });
     }
 
-    private void loadListView() {
-        Aluno aluno = new Aluno();
-        List<Aluno> alunos = aluno.all(this);
-        ArrayAdapter<Aluno> adapter = new ArrayAdapter<Aluno>(this, android.R.layout.simple_list_item_1, alunos);
-        listaAlunos.setAdapter(adapter);
+    private class LoadAlunosTask extends AsyncTask<Void, Void, List<Aluno>> {
+
+        @Override
+        protected List<Aluno> doInBackground(Void... voids) {
+            Aluno aluno = new Aluno();
+            List<Aluno> alunos = aluno.all(ListaAlunosActivity.this);
+            return alunos;
+        }
+
+        @Override
+        protected void onPostExecute(List<Aluno> alunos) {
+            ArrayAdapter<Aluno> adapter = new ArrayAdapter<Aluno>(ListaAlunosActivity.this, android.R.layout.simple_list_item_1, alunos);
+            listaAlunos.setAdapter(adapter);
+        }
     }
 }
