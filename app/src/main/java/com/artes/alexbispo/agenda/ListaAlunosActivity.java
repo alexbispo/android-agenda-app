@@ -1,6 +1,9 @@
 package com.artes.alexbispo.agenda;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.ContextMenu;
@@ -18,8 +21,11 @@ import com.artes.alexbispo.agenda.model.Aluno;
 
 import java.util.List;
 
+import static android.Manifest.permission.CALL_PHONE;
+
 public class ListaAlunosActivity extends AppCompatActivity {
 
+    private static final int CALL_PHONE_REQUEST_CODE = 10;
     private ListView listaAlunos;
 
     @Override
@@ -56,12 +62,48 @@ public class ListaAlunosActivity extends AppCompatActivity {
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, final ContextMenu.ContextMenuInfo menuInfo) {
+        AdapterView.AdapterContextMenuInfo adapterContextMenuInfo = (AdapterView.AdapterContextMenuInfo) menuInfo;
+        final Aluno aluno = (Aluno) listaAlunos.getItemAtPosition(adapterContextMenuInfo.position);
+
+        MenuItem callItem =  menu.add("Ligar");
+        callItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                if(ActivityCompat.checkSelfPermission(ListaAlunosActivity.this, CALL_PHONE) == PackageManager.PERMISSION_GRANTED){
+                    Intent callIntent = new Intent(Intent.ACTION_CALL);
+                    callIntent.setData(Uri.parse("tel:" + aluno.getTelefone()));
+                    startActivity(callIntent);
+                } else {
+                    ActivityCompat.requestPermissions(ListaAlunosActivity.this, new String[]{CALL_PHONE}, CALL_PHONE_REQUEST_CODE);
+                }
+                return false;
+            }
+        });
+
+        MenuItem smsItem = menu.add("Enviar SMS");
+        Intent smsIntent = new Intent(Intent.ACTION_VIEW);
+        smsIntent.setData(Uri.parse("sms:" + aluno.getTelefone()));
+        smsItem.setIntent(smsIntent);
+
+        MenuItem siteItem = menu.add("Ir para o site");
+        Intent siteIntent = new Intent(Intent.ACTION_VIEW);
+        String siteUri = aluno.getSite();
+        if(!aluno.getSite().startsWith("http://")){
+            siteUri = "http://" + siteUri;
+        }
+        siteIntent.setData(Uri.parse(siteUri));
+        siteItem.setIntent(siteIntent);
+
+        MenuItem mapItem = menu.add("Mapa");
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW);
+        mapIntent.setData(Uri.parse("geo:0,0?z=14&q=" + aluno.getEndereco()));
+        mapItem.setIntent(mapIntent);
+
         MenuItem removeMenuItem = menu.add("Remover");
         removeMenuItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
-                AdapterView.AdapterContextMenuInfo adapterContextMenuInfo = (AdapterView.AdapterContextMenuInfo) menuInfo;
-                Aluno aluno = (Aluno) listaAlunos.getItemAtPosition(adapterContextMenuInfo.position);
+
                 aluno.destroy(ListaAlunosActivity.this);
                 loadListView();
                 return false;
